@@ -43,25 +43,16 @@ El flujo de datos sigue un patrón de procesamiento de eventos asíncrono y robu
 
 ```mermaid
 flowchart TD
-    %% Cliente y API
+    %% 1. Definición de todos los componentes en sus grupos
     subgraph "Cliente"
         H[Frontend (React)]
     end
 
     subgraph "Backend (NestJS)"
-        E[API Controller]
-    end
-
-    H -- "Petición HTTP" --> E
-
-    %% Flujo de Ingesta y Procesamiento
-    subgraph "Blockchain (Sepolia)"
-        A[Contrato LINK]
-    end
-
-    subgraph "Backend (NestJS)"
-        B[BlockchainService] -- "Añade Job" --> C((BullMQ Queue))
+        B[BlockchainService]
+        C((BullMQ Queue))
         D[EventProcessor]
+        E[API Controller]
     end
 
     subgraph "Infraestructura"
@@ -69,14 +60,18 @@ flowchart TD
         G[(PostgreSQL)]
     end
 
-    A -- "WebSocket: Evento 'Transfer'" --> B
-    B -- "RPC: queryFilter" --> A
+    subgraph "Blockchain (Sepolia)"
+        A[Contrato LINK]
+    end
 
+    %% 2. Definición de todas las conexiones entre los componentes
+    H -- "Petición HTTP" --> E
+    E -- "Consulta Datos" --> G
+    A -- "Evento (WebSocket/RPC)" --> B
+    B -- "Añade Job" --> C
     C -- "Persistido en" --> F
-    C -- "Consume Job" --> D
-
-    D -- "Guarda Datos en" --> G
-    E -- "Consulta Datos de" --> G
+    C -- "Procesado por" --> D
+    D -- "Guarda Datos" --> G
 ```
 
 ## 🚀 Features
