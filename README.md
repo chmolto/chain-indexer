@@ -8,21 +8,21 @@ Un sistema de indexación de eventos de blockchain que monitoriza, procesa y alm
 
 Este proyecto fue construido específicamente para demostrar la experiencia y las habilidades requeridas para un rol de Desarrollador Backend enfocado en infraestructura blockchain. A continuación se detalla cómo cada componente del proyecto se alinea con los requisitos clave:
 
-### **1. Consumo y Procesamiento de Eventos (En Vivo e Históricos)**
+### 1. Consumo y Procesamiento de Eventos (En Vivo e Históricos)
 
 - **Evidencia:** El `BlockchainService` implementa dos métodos de consumo distintos:
   - **En Vivo:** `listenToTransfers()` utiliza un **WebSocket Provider** (`wss://`) para escuchar y procesar eventos `Transfer` en tiempo real.
   - **Histórico:** `startIndexingHistoricalEvents()` utiliza un **RPC Provider** (`https://`) para consultar y procesar eficientemente miles de eventos pasados en lotes (`queryFilter`).
 - **Habilidad Demostrada:** Entiendo y he implementado las dos principales formas de ingesta de datos de la blockchain, seleccionando la herramienta adecuada (WebSocket/RPC) para cada caso de uso.
 
-### **2. Construcción de Sistemas Confiables y Concurrentes**
+### 2. Construcción de Sistemas Confiables y Concurrentes
 
 - **Evidencia:** La arquitectura central se basa en un pipeline de datos robusto: `Listener -> Cola (BullMQ + Redis) -> Worker`.
   - Cuando se detecta un evento, no se procesa inmediatamente. En su lugar, se añade como un "trabajo" a una cola persistente en **Redis**.
   - Un `EventProcessor` (worker) separado y asíncrono consume estos trabajos de la cola para procesarlos y guardarlos en la base de datos.
 - **Habilidad Demostrada:** He diseñado un sistema que **desacopla la ingesta del procesamiento**, garantizando que no se pierdan datos incluso si la base de datos o el procesador fallan temporalmente. La cola maneja la concurrencia y los picos de eventos, y los trabajos se reintentan automáticamente en caso de error, asegurando una alta fiabilidad.
 
-### **3. Optimización de Rendimiento y Manejo de Límites de Tasa**
+### 3. Optimización de Rendimiento y Manejo de Límites de Tasa
 
 - **Evidencia:** Durante la indexación histórica, me enfrenté a los límites de tasa (`rate limits`) de la API del proveedor de nodos. Resolví este problema del mundo real mediante:
   - **Procesamiento por Lotes:** Reduciendo el número de bloques consultados en cada llamada (`blockChunk`).
@@ -30,7 +30,7 @@ Este proyecto fue construido específicamente para demostrar la experiencia y la
   - **Caching Inteligente:** Implementé un caché en memoria (`Map`) para los `timestamps` de los bloques, reduciendo drásticamente las llamadas RPC de "una por evento" a "una por bloque".
 - **Habilidad Demostrada:** Soy capaz de identificar cuellos de botella de rendimiento y aplicar soluciones prácticas y eficientes para trabajar de manera respetuosa y robusta con infraestructuras externas.
 
-### **4. Modelado de Datos y Diseño de API**
+### 4. Modelado de Datos y Diseño de API
 
 - **Evidencia:**
   - Diseñé la entidad `TransferEventEntity` con **TypeORM**, eligiendo los tipos de datos correctos en **PostgreSQL** (ej. `numeric` para valores grandes, `timestamp` para fechas).
@@ -44,7 +44,7 @@ El flujo de datos sigue un patrón de procesamiento de eventos asíncrono y robu
 ```mermaid
 flowchart TD
     %% =============================================
-    %%  1. DEFINICIÓN DE NODOS (SIN CARACTERES RAROS)
+    %%  1. DEFINICIÓN DE NODOS
     %% =============================================
     A["Contrato LINK"]
     B["BlockchainService"]
@@ -146,19 +146,17 @@ Este proyecto está completamente containerizado para una configuración rápida
 5.  **Iniciar la aplicación**
     Abre dos terminales separadas en la raíz del proyecto.
 
-    _En la Terminal 1, inicia el backend:_
+        *En la Terminal 1, inicia el backend:*
+        ```bash
+        nx serve backend
+        ```
 
-    ```bash
-    nx serve backend
-    ```
+        *En la Terminal 2, inicia el frontend:*
+        ```bash
+        nx serve frontend
+        ```
 
-    _En la Terminal 2, inicia el frontend:_
-
-    ```bash
-    nx serve frontend
-    ```
-
-La aplicación estará disponible en:
+    La aplicación estará disponible en:
 
 - **Frontend**: `http://localhost:4200`
 - **Backend API**: `http://localhost:3000/api`
@@ -178,7 +176,7 @@ Recupera una lista paginada de los eventos de transferencia.
 
 **Respuesta Exitosa (200 OK):**
 
-````json
+```json
 {
   "data": [
     {
@@ -191,16 +189,16 @@ Recupera una lista paginada de los eventos de transferencia.
     }
   ],
   "count": 15234
-}```
+}
+```
 
 ## 🔧 Comandos de Desarrollo (Nx)
 
--   `nx build <app-name>`: Compila una aplicación para producción.
--   `nx test <app-name>`: Ejecuta las pruebas unitarias.
--   `nx lint <app-name>`: Analiza el código con el linter.
--   `nx reset`: Limpia la caché de Nx.
+- `nx build <app-name>`: Compila una aplicación para producción.
+- `nx test <app-name>`: Ejecuta las pruebas unitarias.
+- `nx lint <app-name>`: Analiza el código con el linter.
+- `nx reset`: Limpia la caché de Nx.
 
 ## 📝 Licencia
 
 Este proyecto está bajo la Licencia MIT. Ver el archivo `LICENSE` para más detalles.
-````
