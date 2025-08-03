@@ -1,101 +1,250 @@
-# ChainIndexer
+# Chain Indexer
 
-<a alt="Nx logo" href="https://nx.dev" target="_blank" rel="noreferrer"><img src="https://raw.githubusercontent.com/nrwl/nx/master/images/nx-logo.png" width="45"></a>
+A blockchain event indexing system that monitors and stores LINK token transfer events from the Sepolia testnet. Built with NestJS backend, React frontend, and PostgreSQL database.
 
-✨ Your new, shiny [Nx workspace](https://nx.dev) is ready ✨.
+## 🚀 Features
 
-[Learn more about this workspace setup and its capabilities](https://nx.dev/getting-started/tutorials/react-monorepo-tutorial?utm_source=nx_project&amp;utm_medium=readme&amp;utm_campaign=nx_projects) or run `npx nx graph` to visually explore what was created. Now, let's get you up to speed!
+- **Real-time Event Monitoring**: Listens to LINK token transfer events on Sepolia testnet
+- **Historical Data Indexing**: Indexes all historical transfer events from contract creation
+- **Web Dashboard**: Modern React frontend to browse and search transfer events
+- **Queue-based Processing**: Uses BullMQ for reliable event processing
+- **Database Storage**: PostgreSQL with TypeORM for data persistence
+- **Monorepo Architecture**: Built with Nx for efficient development
 
-## Run tasks
+## 📋 Prerequisites
 
-To run the dev server for your app, use:
+- Node.js (v18 or higher)
+- PostgreSQL database
+- Redis server
+- Sepolia testnet RPC and WebSocket endpoints
 
-```sh
-npx nx serve frontend
+## 🛠️ Installation
+
+1. **Clone the repository**
+
+   ```bash
+   git clone <repository-url>
+   cd chain-indexer
+   ```
+
+2. **Install dependencies**
+
+   ```bash
+   npm install
+   ```
+
+3. **Set up environment variables**
+   Create a `.env` file in the root directory:
+
+   ```env
+   # Database
+   DATABASE_URL=postgresql://username:password@localhost:5432/chain_indexer
+
+   # Redis
+   REDIS_URL=redis://localhost:6379
+
+   # Blockchain (Sepolia testnet)
+   SEPOLIA_RPC_URL=https://sepolia.infura.io/v3/YOUR_PROJECT_ID
+   SEPOLIA_WS_URL=wss://sepolia.infura.io/ws/v3/YOUR_PROJECT_ID
+
+   # Server
+   PORT=3000
+   ```
+
+4. **Set up the database**
+
+   ```bash
+   # Create PostgreSQL database
+   createdb chain_indexer
+   ```
+
+5. **Start Redis**
+
+   ```bash
+   # On Windows (if using WSL or Docker)
+   redis-server
+
+   # On macOS/Linux
+   brew services start redis
+   ```
+
+## 🚀 Running the Application
+
+### Development Mode
+
+Start both frontend and backend in development mode:
+
+```bash
+# Start backend server
+npm run back
+
+# Start frontend development server
+npm run front
 ```
 
-To create a production bundle:
+The application will be available at:
 
-```sh
-npx nx build frontend
+- Frontend: http://localhost:4200
+- Backend API: http://localhost:3000/api
+
+### Production Build
+
+```bash
+# Build all applications
+nx build backend
+nx build frontend
+
+# Serve production build
+nx serve backend --configuration=production
 ```
 
-To see all available targets to run for a project, run:
+## 🏗️ Project Structure
 
-```sh
-npx nx show project frontend
+```
+chain-indexer/
+├── apps/
+│   ├── backend/                 # NestJS API server
+│   │   ├── src/
+│   │   │   ├── app/
+│   │   │   │   ├── entities/    # Database entities
+│   │   │   │   ├── modules/     # Feature modules
+│   │   │   │   └── contracts/   # Smart contract ABIs
+│   │   │   └── main.ts
+│   │   └── package.json
+│   └── frontend/                # React web application
+│       ├── src/
+│       │   └── app/
+│       └── package.json
+├── shared-interfaces/           # Shared TypeScript interfaces
+│   └── src/
+│       └── lib/
+└── package.json
 ```
 
-These targets are either [inferred automatically](https://nx.dev/concepts/inferred-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) or defined in the `project.json` or `package.json` files.
+## 🔧 Configuration
 
-[More about running tasks in the docs &raquo;](https://nx.dev/features/run-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+### Blockchain Configuration
 
-## Add new projects
+The application is configured to monitor the LINK token contract on Sepolia testnet:
 
-While you could add new projects to your workspace manually, you might want to leverage [Nx plugins](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) and their [code generation](https://nx.dev/features/generate-code?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) feature.
+- **Contract Address**: `0x779877A7B0D9E8603169DdbD7836e478b4624789`
+- **Network**: Sepolia testnet
+- **Event**: `Transfer(address,address,uint256)`
 
-Use the plugin's generator to create new projects.
+### Database Schema
 
-To generate a new application, use:
+The main entity is `TransferEventEntity` with the following fields:
 
-```sh
-npx nx g @nx/react:app demo
+- `transactionHash`: Unique transaction identifier
+- `fromAddress`: Sender address
+- `toAddress`: Recipient address
+- `value`: Transfer amount (in wei)
+- `blockNumber`: Block number
+- `transactionDate`: Transaction timestamp
+- `createdAt`: Record creation timestamp
+
+## 📊 API Endpoints
+
+### GET /api/transfers
+
+Retrieve paginated transfer events.
+
+**Query Parameters:**
+
+- `page` (number): Page number (default: 1)
+- `limit` (number): Items per page (default: 25)
+
+**Response:**
+
+```json
+{
+  "data": [
+    {
+      "transactionHash": "0x...",
+      "fromAddress": "0x...",
+      "toAddress": "0x...",
+      "value": "1000000000000000000",
+      "blockNumber": 12345678,
+      "transactionDate": "2024-01-01T00:00:00.000Z"
+    }
+  ],
+  "count": 1000
+}
 ```
 
-To generate a new library, use:
+## 🧪 Development
 
-```sh
-npx nx g @nx/react:lib mylib
+### Available Nx Commands
+
+```bash
+# Build applications
+nx build backend
+nx build frontend
+
+# Run tests
+nx test backend
+nx test frontend
+
+# Lint code
+nx lint backend
+nx lint frontend
+
+# Type checking
+nx typecheck backend
+nx typecheck frontend
 ```
 
-You can use `npx nx list` to get a list of installed plugins. Then, run `npx nx list <plugin-name>` to learn about more specific capabilities of a particular plugin. Alternatively, [install Nx Console](https://nx.dev/getting-started/editor-setup?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) to browse plugins and generators in your IDE.
+### Adding New Features
 
-[Learn more about Nx plugins &raquo;](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) | [Browse the plugin registry &raquo;](https://nx.dev/plugin-registry?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+1. **Backend Modules**: Create new modules in `apps/backend/src/app/modules/`
+2. **Frontend Components**: Add React components in `apps/frontend/src/app/`
+3. **Shared Interfaces**: Define shared types in `shared-interfaces/src/lib/`
 
-## Set up CI!
+## 🔍 Monitoring
 
-### Step 1
+The application includes comprehensive logging:
 
-To connect to Nx Cloud, run the following command:
+- Blockchain service logs connection status and event processing
+- Event processor logs job processing and database operations
+- Error handling with retry mechanisms for failed operations
 
-```sh
-npx nx connect
-```
+## 🚨 Troubleshooting
 
-Connecting to Nx Cloud ensures a [fast and scalable CI](https://nx.dev/ci/intro/why-nx-cloud?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) pipeline. It includes features such as:
+### Common Issues
 
-- [Remote caching](https://nx.dev/ci/features/remote-cache?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Task distribution across multiple machines](https://nx.dev/ci/features/distribute-task-execution?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Automated e2e test splitting](https://nx.dev/ci/features/split-e2e-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Task flakiness detection and rerunning](https://nx.dev/ci/features/flaky-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+1. **Database Connection Error**
 
-### Step 2
+   - Verify PostgreSQL is running
+   - Check `DATABASE_URL` in `.env`
+   - Ensure database exists
 
-Use the following command to configure a CI workflow for your workspace:
+2. **Redis Connection Error**
 
-```sh
-npx nx g ci-workflow
-```
+   - Verify Redis server is running
+   - Check `REDIS_URL` in `.env`
 
-[Learn more about Nx on CI](https://nx.dev/ci/intro/ci-with-nx#ready-get-started-with-your-provider?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+3. **Blockchain Connection Error**
 
-## Install Nx Console
+   - Verify RPC and WebSocket URLs
+   - Check network connectivity
+   - Ensure valid Infura project ID
 
-Nx Console is an editor extension that enriches your developer experience. It lets you run tasks, generate code, and improves code autocompletion in your IDE. It is available for VSCode and IntelliJ.
+4. **Build Errors**
+   - Clear Nx cache: `nx reset`
+   - Reinstall dependencies: `rm -rf node_modules && npm install`
 
-[Install Nx Console &raquo;](https://nx.dev/getting-started/editor-setup?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+## 📝 License
 
-## Useful links
+MIT License - see LICENSE file for details.
 
-Learn more:
+## 🤝 Contributing
 
-- [Learn more about this workspace setup](https://nx.dev/getting-started/tutorials/react-monorepo-tutorial?utm_source=nx_project&amp;utm_medium=readme&amp;utm_campaign=nx_projects)
-- [Learn about Nx on CI](https://nx.dev/ci/intro/ci-with-nx?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Releasing Packages with Nx release](https://nx.dev/features/manage-releases?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [What are Nx plugins?](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests if applicable
+5. Submit a pull request
 
-And join the Nx community:
-- [Discord](https://go.nx.dev/community)
-- [Follow us on X](https://twitter.com/nxdevtools) or [LinkedIn](https://www.linkedin.com/company/nrwl)
-- [Our Youtube channel](https://www.youtube.com/@nxdevtools)
-- [Our blog](https://nx.dev/blog?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+## 📞 Support
+
+For issues and questions, please create an issue in the repository.
