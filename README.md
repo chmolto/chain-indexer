@@ -2,7 +2,7 @@
 
 Un sistema de indexación de eventos de blockchain que monitoriza, procesa y almacena las transferencias del token LINK en la red de prueba Sepolia. El proyecto cuenta con un backend robusto construido con NestJS, un frontend moderno con React, y utiliza PostgreSQL y Redis para la persistencia y el manejo de colas.
 
-![Frontend Screenshot](https://prnt.sc/rRNGPz5TCb9F)
+![Frontend Screenshot](https://img001.prntscr.com/file/img001/XodeOupzRvyoUkDvDsSbNA.png)
 
 ## 🎯 Demostrando las Competencias Clave del Puesto
 
@@ -43,6 +43,7 @@ El flujo de datos sigue un patrón de procesamiento de eventos asíncrono y robu
 
 ```mermaid
 flowchart TD
+    %% Definición de los Nodos dentro de sus Subgrafos
     subgraph "Blockchain (Sepolia)"
         A[Contrato LINK]
     end
@@ -63,14 +64,16 @@ flowchart TD
         H[Frontend (React)]
     end
 
-    A --"Evento 'Transfer' (WebSocket)"--> B
-    B --"queryFilter (RPC)"--> A
-    B --"Añade Job a la Cola"--> C
-    C --"Persistido en"--> F
-    D --"Consume Job de"--> C
-    D --"Guarda Datos en"--> G
-    E --"Consulta Datos de"--> G
-    H --"Petición HTTP a"--> E
+    %% Definición de las Conexiones/Relaciones
+    A -- "Evento 'Transfer' (WebSocket)" --> B
+    B -- "queryFilter (RPC)" --> A
+    B -- "Añade Job a la Cola" --> C
+    C -- "Persistido en" --> F
+    C --> D
+    D -- "Consume Job" --> C
+    D -- "Guarda Datos en" --> G
+    E -- "Consulta Datos de" --> G
+    H -- "Petición HTTP a" --> E
 ```
 
 ## 🚀 Features
