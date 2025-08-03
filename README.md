@@ -43,28 +43,44 @@ El flujo de datos sigue un patrón de procesamiento de eventos asíncrono y robu
 
 ```mermaid
 flowchart TD
-    %% 1. Definición de todos los componentes en sus grupos
+    %% =============================================
+    %%  1. DEFINICIÓN DE NODOS (SIN CARACTERES RAROS)
+    %% =============================================
+    A["Contrato LINK"]
+    B["BlockchainService"]
+    C["BullMQ Queue"]
+    D["EventProcessor"]
+    E["API Controller"]
+    F["Redis"]
+    G["PostgreSQL"]
+    H["Frontend"]
+
+    %% =============================================
+    %%  2. AGRUPACIÓN EN SUBGRAFOS
+    %% =============================================
     subgraph "Cliente"
-        H[Frontend (React)]
+        H
     end
 
     subgraph "Backend (NestJS)"
-        B[BlockchainService]
-        C((BullMQ Queue))
-        D[EventProcessor]
-        E[API Controller]
+        B
+        C
+        D
+        E
     end
 
     subgraph "Infraestructura"
-        F[(Redis)]
-        G[(PostgreSQL)]
+        F
+        G
     end
 
     subgraph "Blockchain (Sepolia)"
-        A[Contrato LINK]
+        A
     end
 
-    %% 2. Definición de todas las conexiones entre los componentes
+    %% =============================================
+    %%  3. DEFINICIÓN DE CONEXIONES
+    %% =============================================
     H -- "Petición HTTP" --> E
     E -- "Consulta Datos" --> G
     A -- "Evento (WebSocket/RPC)" --> B
