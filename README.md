@@ -1,162 +1,167 @@
-# Chain Indexer
+# Chain Indexer Service
 
-A blockchain event indexing system that monitors and stores LINK token transfer events from the Sepolia testnet. Built with NestJS backend, React frontend, and PostgreSQL database.
+Un sistema de indexación de eventos de blockchain que monitoriza, procesa y almacena las transferencias del token LINK en la red de prueba Sepolia. El proyecto cuenta con un backend robusto construido con NestJS, un frontend moderno con React, y utiliza PostgreSQL y Redis para la persistencia y el manejo de colas.
+
+![Frontend Screenshot](https://prnt.sc/rRNGPz5TCb9F)
+
+## 🎯 Demostrando las Competencias Clave del Puesto
+
+Este proyecto fue construido específicamente para demostrar la experiencia y las habilidades requeridas para un rol de Desarrollador Backend enfocado en infraestructura blockchain. A continuación se detalla cómo cada componente del proyecto se alinea con los requisitos clave:
+
+### **1. Consumo y Procesamiento de Eventos (En Vivo e Históricos)**
+
+- **Evidencia:** El `BlockchainService` implementa dos métodos de consumo distintos:
+  - **En Vivo:** `listenToTransfers()` utiliza un **WebSocket Provider** (`wss://`) para escuchar y procesar eventos `Transfer` en tiempo real.
+  - **Histórico:** `startIndexingHistoricalEvents()` utiliza un **RPC Provider** (`https://`) para consultar y procesar eficientemente miles de eventos pasados en lotes (`queryFilter`).
+- **Habilidad Demostrada:** Entiendo y he implementado las dos principales formas de ingesta de datos de la blockchain, seleccionando la herramienta adecuada (WebSocket/RPC) para cada caso de uso.
+
+### **2. Construcción de Sistemas Confiables y Concurrentes**
+
+- **Evidencia:** La arquitectura central se basa en un pipeline de datos robusto: `Listener -> Cola (BullMQ + Redis) -> Worker`.
+  - Cuando se detecta un evento, no se procesa inmediatamente. En su lugar, se añade como un "trabajo" a una cola persistente en **Redis**.
+  - Un `EventProcessor` (worker) separado y asíncrono consume estos trabajos de la cola para procesarlos y guardarlos en la base de datos.
+- **Habilidad Demostrada:** He diseñado un sistema que **desacopla la ingesta del procesamiento**, garantizando que no se pierdan datos incluso si la base de datos o el procesador fallan temporalmente. La cola maneja la concurrencia y los picos de eventos, y los trabajos se reintentan automáticamente en caso de error, asegurando una alta fiabilidad.
+
+### **3. Optimización de Rendimiento y Manejo de Límites de Tasa**
+
+- **Evidencia:** Durante la indexación histórica, me enfrenté a los límites de tasa (`rate limits`) de la API del proveedor de nodos. Resolví este problema del mundo real mediante:
+  - **Procesamiento por Lotes:** Reduciendo el número de bloques consultados en cada llamada (`blockChunk`).
+  - **Pausas Estratégicas:** Introduciendo un `setTimeout` entre cada lote para no saturar la API.
+  - **Caching Inteligente:** Implementé un caché en memoria (`Map`) para los `timestamps` de los bloques, reduciendo drásticamente las llamadas RPC de "una por evento" a "una por bloque".
+- **Habilidad Demostrada:** Soy capaz de identificar cuellos de botella de rendimiento y aplicar soluciones prácticas y eficientes para trabajar de manera respetuosa y robusta con infraestructuras externas.
+
+### **4. Modelado de Datos y Diseño de API**
+
+- **Evidencia:**
+  - Diseñé la entidad `TransferEventEntity` con **TypeORM**, eligiendo los tipos de datos correctos en **PostgreSQL** (ej. `numeric` para valores grandes, `timestamp` para fechas).
+  - Creé una API RESTful con NestJS que expone un endpoint `GET /api/transfers` con **paginación** (`page`, `limit`).
+- **Habilidad Demostrada:** Puedo modelar datos on-chain en un esquema relacional y exponerlos a través de APIs limpias, escalables y eficientes, listas para ser consumidas por un frontend.
+
+## 🏗️ Arquitectura del Sistema
+
+El flujo de datos sigue un patrón de procesamiento de eventos asíncrono y robusto para garantizar la fiabilidad y escalabilidad.
+
+```mermaid
+flowchart TD
+    subgraph "Blockchain (Sepolia)"
+        A[Contrato LINK]
+    end
+
+    subgraph "Backend (NestJS)"
+        B[BlockchainService]
+        C[BullMQ Queue]
+        D[EventProcessor]
+        E[API Controller]
+    end
+
+    subgraph "Infraestructura"
+        F[Redis]
+        G[PostgreSQL]
+    end
+
+    subgraph "Cliente"
+        H[Frontend (React)]
+    end
+
+    A --"Evento 'Transfer' (WebSocket)"--> B
+    B --"queryFilter (RPC)"--> A
+    B --"Añade Job a la Cola"--> C
+    C --"Persistido en"--> F
+    D --"Consume Job de"--> C
+    D --"Guarda Datos en"--> G
+    E --"Consulta Datos de"--> G
+    H --"Petición HTTP a"--> E
+```
 
 ## 🚀 Features
 
-- **Real-time Event Monitoring**: Listens to LINK token transfer events on Sepolia testnet
-- **Historical Data Indexing**: Indexes all historical transfer events from contract creation
-- **Web Dashboard**: Modern React frontend to browse and search transfer events
-- **Queue-based Processing**: Uses BullMQ for reliable event processing
-- **Database Storage**: PostgreSQL with TypeORM for data persistence
-- **Monorepo Architecture**: Built with Nx for efficient development
+- **Monitorización en Tiempo Real**: Escucha eventos `Transfer` del token LINK en la red Sepolia.
+- **Indexación Histórica**: Indexa todos los eventos de transferencia desde la creación del contrato.
+- **Dashboard Web**: Interfaz moderna con React para explorar y paginar los eventos.
+- **Procesamiento Basado en Colas**: Utiliza **BullMQ** para un procesamiento de eventos fiable.
+- **Almacenamiento en Base de Datos**: **PostgreSQL** con **TypeORM** para la persistencia de datos.
+- **Arquitectura Monorepo**: Construido con **Nx** para un desarrollo eficiente y compartido.
 
-## 📋 Prerequisites
+## 📋 Prerrequisitos
 
-- Node.js (v18 or higher)
-- PostgreSQL database
-- Redis server
-- Sepolia testnet RPC and WebSocket endpoints
+- Node.js (v18 o superior)
+- Docker y Docker Compose
 
-## 🛠️ Installation
+## 🛠️ Instalación y Ejecución
 
-1. **Clone the repository**
+Este proyecto está completamente containerizado para una configuración rápida y sencilla.
 
-   ```bash
-   git clone <repository-url>
-   cd chain-indexer
-   ```
+1.  **Clonar el repositorio**
 
-2. **Install dependencies**
+    ```bash
+    git clone <repository-url>
+    cd chain-indexer-service
+    ```
 
-   ```bash
-   npm install
-   ```
+2.  **Configurar las variables de entorno**
+    Crea un archivo `.env` en la raíz del proyecto a partir del ejemplo.
 
-3. **Set up environment variables**
-   Create a `.env` file in the root directory:
+    ```bash
+    cp .env.example .env
+    ```
 
-   ```env
-   # Database
-   DATABASE_URL=postgresql://username:password@localhost:5432/chain_indexer
+    Ahora, edita el archivo `.env` y añade tus URLs de proveedor de nodo (Alchemy, Infura, etc.) para la red Sepolia.
 
-   # Redis
-   REDIS_URL=redis://localhost:6379
+    ```env
+    # Blockchain (Sepolia testnet)
+    SEPOLIA_RPC_URL=https://eth-sepolia.g.alchemy.com/v2/TU_API_KEY
+    SEPOLIA_WS_URL=wss://eth-sepolia.g.alchemy.com/v2/TU_API_KEY
+    ```
 
-   # Blockchain (Sepolia testnet)
-   SEPOLIA_RPC_URL=https://sepolia.infura.io/v3/YOUR_PROJECT_ID
-   SEPOLIA_WS_URL=wss://sepolia.infura.io/ws/v3/YOUR_PROJECT_ID
+3.  **Levantar los servicios con Docker Compose**
+    Este comando creará y levantará los contenedores de PostgreSQL y Redis en segundo plano.
 
-   # Server
-   PORT=3000
-   ```
+    ```bash
+    docker-compose up -d
+    ```
 
-4. **Set up the database**
+4.  **Instalar dependencias de Node.js**
 
-   ```bash
-   # Create PostgreSQL database
-   createdb chain_indexer
-   ```
+    ```bash
+    npm install
+    ```
 
-5. **Start Redis**
+5.  **Iniciar la aplicación**
+    Abre dos terminales separadas en la raíz del proyecto.
 
-   ```bash
-   # On Windows (if using WSL or Docker)
-   redis-server
+    _En la Terminal 1, inicia el backend:_
 
-   # On macOS/Linux
-   brew services start redis
-   ```
+    ```bash
+    nx serve backend
+    ```
 
-## 🚀 Running the Application
+    _En la Terminal 2, inicia el frontend:_
 
-### Development Mode
+    ```bash
+    nx serve frontend
+    ```
 
-Start both frontend and backend in development mode:
+La aplicación estará disponible en:
 
-```bash
-# Start backend server
-npm run back
+- **Frontend**: `http://localhost:4200`
+- **Backend API**: `http://localhost:3000/api`
 
-# Start frontend development server
-npm run front
-```
-
-The application will be available at:
-
-- Frontend: http://localhost:4200
-- Backend API: http://localhost:3000/api
-
-### Production Build
-
-```bash
-# Build all applications
-nx build backend
-nx build frontend
-
-# Serve production build
-nx serve backend --configuration=production
-```
-
-## 🏗️ Project Structure
-
-```
-chain-indexer/
-├── apps/
-│   ├── backend/                 # NestJS API server
-│   │   ├── src/
-│   │   │   ├── app/
-│   │   │   │   ├── entities/    # Database entities
-│   │   │   │   ├── modules/     # Feature modules
-│   │   │   │   └── contracts/   # Smart contract ABIs
-│   │   │   └── main.ts
-│   │   └── package.json
-│   └── frontend/                # React web application
-│       ├── src/
-│       │   └── app/
-│       └── package.json
-├── shared-interfaces/           # Shared TypeScript interfaces
-│   └── src/
-│       └── lib/
-└── package.json
-```
-
-## 🔧 Configuration
-
-### Blockchain Configuration
-
-The application is configured to monitor the LINK token contract on Sepolia testnet:
-
-- **Contract Address**: `0x779877A7B0D9E8603169DdbD7836e478b4624789`
-- **Network**: Sepolia testnet
-- **Event**: `Transfer(address,address,uint256)`
-
-### Database Schema
-
-The main entity is `TransferEventEntity` with the following fields:
-
-- `transactionHash`: Unique transaction identifier
-- `fromAddress`: Sender address
-- `toAddress`: Recipient address
-- `value`: Transfer amount (in wei)
-- `blockNumber`: Block number
-- `transactionDate`: Transaction timestamp
-- `createdAt`: Record creation timestamp
+La primera vez que se inicie el backend, comenzará el proceso de indexación histórica, lo cual puede tardar varios minutos. Podrás ver el progreso en los logs de la terminal del backend.
 
 ## 📊 API Endpoints
 
-### GET /api/transfers
+### GET `/api/transfers`
 
-Retrieve paginated transfer events.
+Recupera una lista paginada de los eventos de transferencia.
 
-**Query Parameters:**
+**Parámetros de Consulta:**
 
-- `page` (number): Page number (default: 1)
-- `limit` (number): Items per page (default: 25)
+- `page` (opcional, número): El número de página a solicitar. Por defecto: `1`.
+- `limit` (opcional, número): El número de resultados por página. Por defecto: `25`.
 
-**Response:**
+**Respuesta Exitosa (200 OK):**
 
-```json
+````json
 {
   "data": [
     {
@@ -164,87 +169,21 @@ Retrieve paginated transfer events.
       "fromAddress": "0x...",
       "toAddress": "0x...",
       "value": "1000000000000000000",
-      "blockNumber": 12345678,
-      "transactionDate": "2024-01-01T00:00:00.000Z"
+      "blockNumber": 1234567,
+      "transactionDate": "2025-08-03T10:00:00.000Z"
     }
   ],
-  "count": 1000
-}
-```
+  "count": 15234
+}```
 
-## 🧪 Development
+## 🔧 Comandos de Desarrollo (Nx)
 
-### Available Nx Commands
+-   `nx build <app-name>`: Compila una aplicación para producción.
+-   `nx test <app-name>`: Ejecuta las pruebas unitarias.
+-   `nx lint <app-name>`: Analiza el código con el linter.
+-   `nx reset`: Limpia la caché de Nx.
 
-```bash
-# Build applications
-nx build backend
-nx build frontend
+## 📝 Licencia
 
-# Run tests
-nx test backend
-nx test frontend
-
-# Lint code
-nx lint backend
-nx lint frontend
-
-# Type checking
-nx typecheck backend
-nx typecheck frontend
-```
-
-### Adding New Features
-
-1. **Backend Modules**: Create new modules in `apps/backend/src/app/modules/`
-2. **Frontend Components**: Add React components in `apps/frontend/src/app/`
-3. **Shared Interfaces**: Define shared types in `shared-interfaces/src/lib/`
-
-## 🔍 Monitoring
-
-The application includes comprehensive logging:
-
-- Blockchain service logs connection status and event processing
-- Event processor logs job processing and database operations
-- Error handling with retry mechanisms for failed operations
-
-## 🚨 Troubleshooting
-
-### Common Issues
-
-1. **Database Connection Error**
-
-   - Verify PostgreSQL is running
-   - Check `DATABASE_URL` in `.env`
-   - Ensure database exists
-
-2. **Redis Connection Error**
-
-   - Verify Redis server is running
-   - Check `REDIS_URL` in `.env`
-
-3. **Blockchain Connection Error**
-
-   - Verify RPC and WebSocket URLs
-   - Check network connectivity
-   - Ensure valid Infura project ID
-
-4. **Build Errors**
-   - Clear Nx cache: `nx reset`
-   - Reinstall dependencies: `rm -rf node_modules && npm install`
-
-## 📝 License
-
-MIT License - see LICENSE file for details.
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
-
-## 📞 Support
-
-For issues and questions, please create an issue in the repository.
+Este proyecto está bajo la Licencia MIT. Ver el archivo `LICENSE` para más detalles.
+````
